@@ -97,6 +97,28 @@ function calculateVotingStats(room) {
 io.on('connection', (socket) => {
     console.log('New user connected:', socket.id);
 
+    // Novo evento para recuperar estado atual da sala
+    socket.on('getRoomState', () => {
+        const user = users.get(socket.id);
+        if (!user) return;
+
+        const room = rooms.get(user.roomId);
+        if (!room) return;
+
+        socket.emit('roomState', {
+            room: {
+                id: room.id,
+                creator: room.creator, // Adicione este campo
+                currentStory: room.currentStory, // Já existe
+                votingActive: room.votingActive,
+                votesRevealed: room.votesRevealed,
+                users: Array.from(room.users.values()),
+                votes: room.votesRevealed ? Object.fromEntries(room.votes) : {}
+            },
+            user: room.users.get(socket.id)
+        });
+    });
+
     // Quando usuário se junta a uma sala
     socket.on('joinRoom', (data) => {
         const { roomId, userName, isSpectator = false } = data;
@@ -121,6 +143,7 @@ io.on('connection', (socket) => {
         socket.emit('roomJoined', {
             room: {
                 id: room.id,
+                creator: room.creator, // Adicione este campo
                 currentStory: room.currentStory,
                 votingActive: room.votingActive,
                 votesRevealed: room.votesRevealed,
@@ -275,6 +298,24 @@ io.on('connection', (socket) => {
         }
         
         console.log('User disconnected:', socket.id);
+    });
+
+    // Evento para sair da sala
+    socket.on('leaveRoom', () => {
+        const user = removeUserFromRoom(socket.id);
+        if (user) {
+            socket.leave(user.roomId);
+            socket.emit('leftRoom');
+            socket.to(user.roomId).emit('userLeft', {
+                userId: socket.id,
+                userName: user.name
+            });
+
+            const room = rooms.get(user.roomId);
+            if (room) {
+                io.to(user.roomId).emit('usersUpdated', Array.from(room.users.values()));
+            }
+        }
     });
 });
 

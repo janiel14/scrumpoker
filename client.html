@@ -385,6 +385,7 @@
                         <button class="btn btn-primary" onclick="startVoting()">🚀 Iniciar Votação</button>
                         <button class="btn btn-success" onclick="revealVotes()" id="reveal-btn" disabled>👁️ Revelar Votos</button>
                         <button class="btn btn-warning" onclick="resetVoting()">🔄 Nova Votação</button>
+                        <button class="btn btn-danger" onclick="leaveRoom()">🚪 Sair da Sala</button>
                     </div>
                 </div>
 
@@ -445,6 +446,22 @@
         socket.on('connect', () => {
             connectionStatus.textContent = 'Conectado';
             connectionStatus.style.color = '#27ae60';
+
+            const roomId = localStorage.getItem('scrumPokerRoomId');
+            const userName = localStorage.getItem('scrumPokerUserName');
+            const isSpectator = localStorage.getItem('scrumPokerIsSpectator') === 'true';
+
+            if (roomId && userName) {
+                document.getElementById('room-id').value = roomId;
+                document.getElementById('user-name-input').value = userName;
+                document.getElementById('spectator-mode').checked = isSpectator;
+                joinRoom();
+
+                // Aguarda entrar na sala, depois pede o estado atual
+                socket.once('roomJoined', () => {
+                    socket.emit('getRoomState');
+                });
+            }
         });
 
         socket.on('disconnect', () => {
@@ -463,12 +480,41 @@
                 return;
             }
 
+            // Salva dados no localStorage
+            localStorage.setItem('scrumPokerRoomId', roomId);
+            localStorage.setItem('scrumPokerUserName', userName);
+            localStorage.setItem('scrumPokerIsSpectator', isSpectator);
+
             socket.emit('joinRoom', {
                 roomId: roomId,
                 userName: userName,
                 isSpectator: isSpectator
             });
         }
+
+        // Recebe o estado atual da sala e atualiza a interface
+        socket.on('roomState', (data) => {
+            currentRoom = data.room;
+            currentUser = data.user;
+
+            joinSection.classList.add('hidden');
+            pokerSection.classList.remove('hidden');
+            
+            roomNameEl.textContent = `Sala: ${currentRoom.id}`;
+            userNameEl.textContent = `Usuário: ${currentUser.name}${currentUser.isSpectator ? ' (Espectador)' : ''}${currentUser.isCreator ? ' (Criador)' : ''}`;
+            currentStoryEl.textContent = currentRoom.currentStory || '';
+
+            updateUsersList(currentRoom.users);
+
+            if (currentRoom.votingActive) {
+                showVotingInterface();
+                if (currentRoom.votesRevealed) {
+                    showResults(currentRoom.votes);
+                }
+            } else {
+                resetInterface();
+            }
+        });
 
         // Sala unida com sucesso
         socket.on('roomJoined', (data) => {
@@ -481,6 +527,7 @@
             
             roomNameEl.textContent = `Sala: ${currentRoom.id}`;
             userNameEl.textContent = `Usuário: ${currentUser.name}${currentUser.isSpectator ? ' (Espectador)' : ''}${currentUser.isCreator ? ' (Criador)' : ''}`;
+            currentStoryEl.textContent = currentRoom.currentStory || '';
 
             // Mostrar controles se for criador
             if (currentUser.isCreator) {
@@ -635,7 +682,7 @@
                 voteStats.innerHTML = `
                     <h4>Estatísticas:</h4>
                     <p><strong>Média:</strong> ${stats.avg}</p>
-                    <p><strong>Mín/Máx:</strong> ${stats.min} / ${stats.max}</p>
+                    <p><strong>Vín/Máx:</strong> ${stats.min} / ${stats.max}</p>
                     <p><strong>Votos válidos:</strong> ${stats.count}</p>
                 `;
             }
@@ -710,6 +757,18 @@
 
         function resetVoting() {
             socket.emit('resetVoting');
+        }
+
+        function leaveRoom() {
+            socket.emit('leaveRoom');
+            // Redirecionar ou mostrar mensagem de saída
+            joinSection.classList.remove('hidden');
+            pokerSection.classList.add('hidden');
+            currentRoom = null;
+            currentUser = null;
+            localStorage.removeItem('scrumPokerRoomId');
+            localStorage.removeItem('scrumPokerUserName');
+            localStorage.removeItem('scrumPokerIsSpectator');
         }
 
         function sendMessage() {
