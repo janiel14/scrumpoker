@@ -109,10 +109,16 @@ io.on('connection', (socket) => {
     // Novo evento para recuperar estado atual da sala
     socket.on('getRoomState', () => {
         const user = users.get(socket.id);
-        if (!user) return;
+        if (!user) {
+            socket.emit('error', { message: 'Usuário não encontrado' });
+            return;
+        }
 
         const room = rooms.get(user.roomId);
-        if (!room) return;
+        if (!room) {
+            socket.emit('error', { message: 'Sala não encontrada' });
+            return;
+        }
 
         socket.emit('roomState', {
             room: {
@@ -134,6 +140,12 @@ io.on('connection', (socket) => {
     // Quando usuário se junta a uma sala
     socket.on('joinRoom', (data) => {
         const { roomId, userName, isSpectator = false } = data;
+        
+        // Validação
+        if (!roomId || !userName || roomId.length > 20 || userName.length > 30) {
+            socket.emit('error', { message: 'Dados inválidos' });
+            return;
+        }
 
         let room = rooms.get(roomId);
         if (!room) {
@@ -162,7 +174,10 @@ io.on('connection', (socket) => {
                 users: Array.from(room.users.values()),
                 votes: room.votesRevealed ? Object.fromEntries(room.votes) : {}
             },
-            user: room.users.get(socket.id)
+            user: {
+                ...room.users.get(socket.id),
+                vote: room.votes.get(socket.id) || null // Adicione esta linha
+            }
         });
 
         // Notificar outros usuários da sala
@@ -177,7 +192,7 @@ io.on('connection', (socket) => {
     // Iniciar nova votação
     socket.on('startVoting', (data) => {
         const user = users.get(socket.id);
-        if (!user || !user.isCreator) return;
+        if (!user?.isCreator) return;
 
         const room = rooms.get(user.roomId);
         if (!room) return;
@@ -201,7 +216,7 @@ io.on('connection', (socket) => {
         if (!user || user.isSpectator) return;
 
         const room = rooms.get(user.roomId);
-        if (!room || !room.votingActive || room.votesRevealed) return;
+        if (!room?.votingActive || room.votesRevealed) return;
 
         const { vote } = data;
         if (!CARDS.includes(vote)) return;
@@ -230,10 +245,10 @@ io.on('connection', (socket) => {
     // Revelar votos
     socket.on('revealVotes', () => {
         const user = users.get(socket.id);
-        if (!user || !user.isCreator) return;
+        if (!user?.isCreator) return;
 
         const room = rooms.get(user.roomId);
-        if (!room || !room.votingActive) return;
+        if (!room?.votingActive) return;
 
         room.votesRevealed = true;
         
@@ -261,7 +276,7 @@ io.on('connection', (socket) => {
     // Resetar votação
     socket.on('resetVoting', () => {
         const user = users.get(socket.id);
-        if (!user || !user.isCreator) return;
+        if (!user?.isCreator) return;
 
         const room = rooms.get(user.roomId);
         if (!room) return;
@@ -332,6 +347,19 @@ io.on('connection', (socket) => {
 
     
 });
+
+// Limpar salas antigas (opcional)
+setInterval(() => {
+    const now = Date.now();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+    
+    for (const [roomId, room] of rooms) {
+        if (now - room.createdAt > maxAge && room.users.size === 0) {
+            rooms.delete(roomId);
+            console.log(`Removed old room: ${roomId}`);
+        }
+    }
+}, 60 * 60 * 1000); // A cada hora
 
 server.listen(port, () => {
     console.log(`Scrum Poker server is running on port ${port}`);

@@ -1,0 +1,372 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.header {
+    background: #2c3e50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.header h1 {
+    margin-bottom: 10px;
+}
+
+.room-info {
+    background: #34495e;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.room-info > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.join-form {
+    padding: 30px;
+    text-align: center;
+}
+
+.join-form input, .join-form button {
+    padding: 12px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.join-form button {
+    background: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.join-form button:hover {
+    background: #2980b9;
+}
+
+.main-content {
+    display: flex;
+    min-height: 500px;
+}
+
+.poker-area {
+    flex: 2;
+    padding: 20px;
+}
+
+.sidebar {
+    flex: 1;
+    background: #f8f9fa;
+    border-left: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.story-section {
+    background: #e8f4fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.story-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.story-input.hidden {
+    display: none;
+}
+
+.cards-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.card {
+    display: inline-block;
+    width: 60px;
+    height: 80px;
+    margin: 5px;
+    background: #3498db;
+    color: white;
+    border: 2px solid #2980b9;
+    border-radius: 8px;
+    cursor: pointer;
+    line-height: 76px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.card.selected {
+    background: #e74c3c;
+    border-color: #c0392b;
+    transform: translateY(-5px);
+}
+
+.card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voting-status {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.results-container {
+    margin: 20px 0;
+}
+
+.vote-result {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    margin: 5px 0;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.stats {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.users-list {
+    padding: 20px;
+}
+
+.user {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin: 5px 0;
+    background: white;
+    border-radius: 5px;
+    border-left: 4px solid #3498db;
+}
+
+.user.creator {
+    border-left-color: #e74c3c;
+}
+
+.user.spectator {
+    border-left-color: #95a5a6;
+}
+
+.vote-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ecf0f1;
+}
+
+.vote-indicator.voted {
+    background: #27ae60;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.chat-messages {
+    flex: 1;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.chat-input {
+    display: flex;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px 0 0 5px;
+}
+
+.chat-input button {
+    padding: 8px 15px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+}
+
+.controls {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.btn {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-success {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.message {
+    padding: 5px;
+    margin: 2px 0;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+.message .timestamp {
+    color: #666;
+    font-size: 12px;
+}
+
+.room-info > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#leave-btn {
+    margin-left: 10px;
+}
+
+#connection-status {
+    text-align: center;
+    width: 100%;
+}
+
+#leave-btn, #share-btn {
+    width: 180px;
+    margin-left: 0;
+    margin-top: 5px;
+    display: block;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .card {
+        width: 50px;
+        height: 70px;
+        line-height: 66px;
+        font-size: 16px;
+        margin: 3px;
+    }
+
+    .header {
+        padding: 10px;
+    }
+    .room-info {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+        gap: 10px;
+    }
+    .room-info > div {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .room-info > div:last-child {
+        width: 100%;
+    }
+    #leave-btn, #share-btn {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 5px;
+    }
+    #connection-status {
+        margin-bottom: 5px;
+    }
+}
