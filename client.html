@@ -103,6 +103,10 @@
             margin-bottom: 10px;
         }
 
+        .story-input.hidden {
+            display: none;
+        }
+
         .cards-container {
             text-align: center;
             margin: 20px 0;
@@ -302,6 +306,10 @@
             font-size: 12px;
         }
 
+        #leave-btn {
+            margin-left: 10px;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
@@ -326,7 +334,11 @@
                     <span id="room-name">Sala: -</span>
                     <span id="user-name" style="margin-left: 20px;">Usuário: -</span>
                 </div>
-                <div id="connection-status">Desconectado</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="connection-status">Desconectado</span>
+                    <button id="share-btn" class="btn btn-primary hidden" onclick="shareRoom()">🔗 Compartilhar Sala</button>
+                    <button id="leave-btn" class="btn btn-danger hidden" onclick="leaveRoom()">🚪 Sair da Sala</button>
+                </div>
             </div>
         </div>
 
@@ -382,10 +394,9 @@
 
                     <!-- Controles (apenas para criador) -->
                     <div id="creator-controls" class="controls hidden">
+                        <button class="btn btn-warning" onclick="resetVoting()">🔄 Nova História</button>
                         <button class="btn btn-primary" onclick="startVoting()">🚀 Iniciar Votação</button>
                         <button class="btn btn-success" onclick="revealVotes()" id="reveal-btn" disabled>👁️ Revelar Votos</button>
-                        <button class="btn btn-warning" onclick="resetVoting()">🔄 Nova Votação</button>
-                        <button class="btn btn-danger" onclick="leaveRoom()">🚪 Sair da Sala</button>
                     </div>
                 </div>
 
@@ -420,6 +431,8 @@
         let currentRoom = null;
         let selectedCard = null;
 
+        const CARDS = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];
+
         // Elementos DOM
         const joinSection = document.getElementById('join-section');
         const pokerSection = document.getElementById('poker-section');
@@ -441,6 +454,8 @@
         const userCount = document.getElementById('user-count');
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
+        const leaveBtn = document.getElementById('leave-btn');
+        const shareBtn = document.getElementById('share-btn');
 
         // Eventos de conexão
         socket.on('connect', () => {
@@ -504,16 +519,45 @@
             userNameEl.textContent = `Usuário: ${currentUser.name}${currentUser.isSpectator ? ' (Espectador)' : ''}${currentUser.isCreator ? ' (Criador)' : ''}`;
             currentStoryEl.textContent = currentRoom.currentStory || '';
 
+            // Controle dos botões do criador
+            if (currentUser.isCreator) {
+                creatorControls.classList.remove('hidden');
+            } else {
+                creatorControls.classList.add('hidden');
+            }
+
             updateUsersList(currentRoom.users);
 
             if (currentRoom.votingActive) {
                 showVotingInterface();
+                if (!currentUser.isSpectator) {
+                    createCards(CARDS);
+
+                    // Restaurar seleção do voto do usuário
+                    if (currentUser.vote) {
+                        const cardEls = document.querySelectorAll('.card');
+                        cardEls.forEach(cardEl => {
+                            if (cardEl.textContent === currentUser.vote) {
+                                cardEl.classList.add('selected');
+                                selectedCard = currentUser.vote;
+                                // Desabilita os cards após votar
+                                cardEls.forEach(c => c.classList.add('disabled'));
+                                statusText.textContent = `Você votou: ${currentUser.vote}. Aguardando outros jogadores...`;
+                            }
+                        });
+                    }
+                }
                 if (currentRoom.votesRevealed) {
                     showResults(currentRoom.votes);
+                    cardsSection.classList.add('hidden');
+                    statusText.textContent = 'Votos revelados!';
                 }
             } else {
                 resetInterface();
             }
+
+            showLeaveButton();
+            updateStoryInputVisibility();
         });
 
         // Sala unida com sucesso
@@ -521,7 +565,6 @@
             currentRoom = data.room;
             currentUser = data.user;
 
-            // Atualizar interface
             joinSection.classList.add('hidden');
             pokerSection.classList.remove('hidden');
             
@@ -529,26 +572,24 @@
             userNameEl.textContent = `Usuário: ${currentUser.name}${currentUser.isSpectator ? ' (Espectador)' : ''}${currentUser.isCreator ? ' (Criador)' : ''}`;
             currentStoryEl.textContent = currentRoom.currentStory || '';
 
-            // Mostrar controles se for criador
+            // Controle dos botões do criador
             if (currentUser.isCreator) {
                 creatorControls.classList.remove('hidden');
+            } else {
+                creatorControls.classList.add('hidden');
             }
 
-            // Atualizar história atual
-            if (currentRoom.currentStory) {
-                currentStoryEl.textContent = currentRoom.currentStory;
-            }
-
-            // Atualizar usuários
             updateUsersList(currentRoom.users);
 
-            // Se a votação estiver ativa
             if (currentRoom.votingActive) {
                 showVotingInterface();
                 if (currentRoom.votesRevealed) {
                     showResults(currentRoom.votes);
                 }
             }
+
+            showLeaveButton();
+            updateStoryInputVisibility();
         });
 
         // Usuário entrou na sala
@@ -564,6 +605,20 @@
         // Lista de usuários atualizada
         socket.on('usersUpdated', (users) => {
             updateUsersList(users);
+
+            // Atualiza currentUser para refletir possível mudança de criador
+            const me = users.find(u => u.id === currentUser.id);
+            if (me) {
+                currentUser.isCreator = me.isCreator;
+                // Atualiza visibilidade dos botões do criador
+                if (currentUser.isCreator) {
+                    creatorControls.classList.remove('hidden');
+                } else {
+                    creatorControls.classList.add('hidden');
+                }
+            }
+
+            updateStoryInputVisibility();
         });
 
         // Votação iniciada
@@ -759,9 +814,41 @@
             socket.emit('resetVoting');
         }
 
+        // Mostra o botão ao entrar na sala
+        function showLeaveButton() {
+            leaveBtn.classList.remove('hidden');
+            showShareButton();
+        }
+
+        // Esconde o botão ao sair da sala
+        function hideLeaveButton() {
+            leaveBtn.classList.add('hidden');
+            hideShareButton();
+        }
+
+        function showShareButton() {
+            shareBtn.classList.remove('hidden');
+        }
+
+        function hideShareButton() {
+            shareBtn.classList.add('hidden');
+        }
+
+        function shareRoom() {
+            if (!currentRoom || !currentRoom.id) return;
+            const url = `${window.location.origin}?room=${encodeURIComponent(currentRoom.id)}`;
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    alert('Link da sala copiado para área de transferência!');
+                })
+                .catch(() => {
+                    prompt('Copie o link da sala:', url);
+                });
+        }
+
+        // Ao sair da sala
         function leaveRoom() {
             socket.emit('leaveRoom');
-            // Redirecionar ou mostrar mensagem de saída
             joinSection.classList.remove('hidden');
             pokerSection.classList.add('hidden');
             currentRoom = null;
@@ -769,6 +856,7 @@
             localStorage.removeItem('scrumPokerRoomId');
             localStorage.removeItem('scrumPokerUserName');
             localStorage.removeItem('scrumPokerIsSpectator');
+            hideLeaveButton();
         }
 
         function sendMessage() {
@@ -795,6 +883,21 @@
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
+
+        function updateStoryInputVisibility() {
+            if (currentUser && currentUser.isCreator) {
+                storyInput.classList.remove('hidden');
+            } else {
+                storyInput.classList.add('hidden');
+            }
+        }
+
+        // Preenche campo sala automaticamente se vier na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedRoomId = urlParams.get('room');
+        if (sharedRoomId) {
+            document.getElementById('room-id').value = sharedRoomId;
+        }
     </script>
 </body>
 </html>

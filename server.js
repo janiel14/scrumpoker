@@ -41,15 +41,21 @@ function addUserToRoom(roomId, userId, userName, isSpectator = false) {
     const room = rooms.get(roomId);
     if (!room) return null;
 
-    const user = {
-        id: userId,
-        name: userName,
-        isSpectator: isSpectator,
-        vote: null,
-        isCreator: userId === room.creator
-    };
-
-    room.users.set(userId, user);
+    let user = room.users.get(userId);
+    if (user) {
+        user.name = userName;
+        user.isSpectator = isSpectator;
+        user.isCreator = userId === room.creator;
+    } else {
+        user = {
+            id: userId,
+            name: userName,
+            isSpectator: isSpectator,
+            vote: null,
+            isCreator: userId === room.creator
+        };
+        room.users.set(userId, user);
+    }
     users.set(userId, { ...user, roomId });
     return room;
 }
@@ -63,17 +69,20 @@ function removeUserFromRoom(userId) {
     if (room) {
         room.users.delete(userId);
         room.votes.delete(userId);
-        
-        // Se o criador sair, transferir para outro usuário ou deletar sala
+
+        // Se o criador saiu e ainda há usuários, transfere o criador
         if (user.isCreator && room.users.size > 0) {
-            const newCreator = Array.from(room.users.values())[0];
-            newCreator.isCreator = true;
-            room.creator = newCreator.id;
-        } else if (room.users.size === 0) {
+            const nextCreator = Array.from(room.users.values())[0];
+            nextCreator.isCreator = true;
+            room.creator = nextCreator.id;
+        }
+
+        // Só apaga a sala se todos saírem
+        if (room.users.size === 0) {
             rooms.delete(user.roomId);
         }
     }
-    
+
     users.delete(userId);
     return user;
 }
@@ -108,21 +117,24 @@ io.on('connection', (socket) => {
         socket.emit('roomState', {
             room: {
                 id: room.id,
-                creator: room.creator, // Adicione este campo
-                currentStory: room.currentStory, // Já existe
+                creator: room.creator,
+                currentStory: room.currentStory,
                 votingActive: room.votingActive,
                 votesRevealed: room.votesRevealed,
                 users: Array.from(room.users.values()),
                 votes: room.votesRevealed ? Object.fromEntries(room.votes) : {}
             },
-            user: room.users.get(socket.id)
+            user: {
+                ...room.users.get(socket.id),
+                vote: room.votes.get(socket.id) || null // Adicione esta linha
+            }
         });
     });
 
     // Quando usuário se junta a uma sala
     socket.on('joinRoom', (data) => {
         const { roomId, userName, isSpectator = false } = data;
-        
+
         let room = rooms.get(roomId);
         if (!room) {
             room = createRoom(roomId, socket.id);
@@ -135,7 +147,7 @@ io.on('connection', (socket) => {
             removeUserFromRoom(socket.id);
         }
 
-        // Entrar na nova sala
+        // Entrar na nova sala (atualiza ou cria usuário)
         socket.join(roomId);
         addUserToRoom(roomId, socket.id, userName, isSpectator);
 
@@ -143,7 +155,7 @@ io.on('connection', (socket) => {
         socket.emit('roomJoined', {
             room: {
                 id: room.id,
-                creator: room.creator, // Adicione este campo
+                creator: room.creator,
                 currentStory: room.currentStory,
                 votingActive: room.votingActive,
                 votesRevealed: room.votesRevealed,
@@ -155,10 +167,10 @@ io.on('connection', (socket) => {
 
         // Notificar outros usuários da sala
         socket.to(roomId).emit('userJoined', room.users.get(socket.id));
-        
+
         // Enviar lista atualizada de usuários
         io.to(roomId).emit('usersUpdated', Array.from(room.users.values()));
-        
+
         console.log(`User ${userName} joined room ${roomId}`);
     });
 
@@ -317,6 +329,8 @@ io.on('connection', (socket) => {
             }
         }
     });
+
+    
 });
 
 server.listen(port, () => {
