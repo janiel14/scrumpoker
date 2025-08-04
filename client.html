@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrum Poker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+        }
+
+        .room-info {
+            background: #34495e;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .join-form {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .join-form input, .join-form button {
+            padding: 12px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .join-form button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .join-form button:hover {
+            background: #2980b9;
+        }
+
+        .main-content {
+            display: flex;
+            min-height: 500px;
+        }
+
+        .poker-area {
+            flex: 2;
+            padding: 20px;
+        }
+
+        .sidebar {
+            flex: 1;
+            background: #f8f9fa;
+            border-left: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .story-section {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .story-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .cards-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .card {
+            display: inline-block;
+            width: 60px;
+            height: 80px;
+            margin: 5px;
+            background: #3498db;
+            color: white;
+            border: 2px solid #2980b9;
+            border-radius: 8px;
+            cursor: pointer;
+            line-height: 76px;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .card.selected {
+            background: #e74c3c;
+            border-color: #c0392b;
+            transform: translateY(-5px);
+        }
+
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .voting-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .results-container {
+            margin: 20px 0;
+        }
+
+        .vote-result {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .stats {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .users-list {
+            padding: 20px;
+        }
+
+        .user {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .user.creator {
+            border-left-color: #e74c3c;
+        }
+
+        .user.spectator {
+            border-left-color: #95a5a6;
+        }
+
+        .vote-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ecf0f1;
+        }
+
+        .vote-indicator.voted {
+            background: #27ae60;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-input {
+            display: flex;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .chat-input button {
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .message {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .message .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .card {
+                width: 50px;
+                height: 70px;
+                line-height: 66px;
+                font-size: 16px;
+                margin: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🃏 Scrum Poker</h1>
+            <div class="room-info">
+                <div>
+                    <span id="room-name">Sala: -</span>
+                    <span id="user-name" style="margin-left: 20px;">Usuário: -</span>
+                </div>
+                <div id="connection-status">Desconectado</div>
+            </div>
+        </div>
+
+        <!-- Formulário de entrada -->
+        <div id="join-section" class="join-form">
+            <h2>Entrar na Sessão de Poker</h2>
+            <div style="margin: 20px 0;">
+                <input type="text" id="room-id" placeholder="ID da Sala" maxlength="20" required>
+                <input type="text" id="user-name-input" placeholder="Seu Nome" maxlength="30" required>
+            </div>
+            <div style="margin: 10px 0;">
+                <label>
+                    <input type="checkbox" id="spectator-mode"> Entrar como Espectador
+                </label>
+            </div>
+            <button onclick="joinRoom()">Entrar na Sala</button>
+        </div>
+
+        <!-- Área principal do poker -->
+        <div id="poker-section" class="hidden">
+            <div class="main-content">
+                <div class="poker-area">
+                    <!-- Seção da história -->
+                    <div class="story-section">
+                        <h3>📖 História Atual</h3>
+                        <input type="text" id="story-input" class="story-input" placeholder="Digite a história/tarefa..." maxlength="200">
+                        <div id="current-story" style="font-style: italic; color: #666;"></div>
+                    </div>
+
+                    <!-- Status da votação -->
+                    <div id="voting-status" class="voting-status hidden">
+                        <p id="status-text">Aguardando início da votação...</p>
+                    </div>
+
+                    <!-- Cartas para votação -->
+                    <div id="cards-section" class="hidden">
+                        <h3>🃏 Selecione sua estimativa:</h3>
+                        <div id="cards-container" class="cards-container">
+                            <!-- Cartas serão inseridas aqui dinamicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div id="results-section" class="hidden">
+                        <h3>📊 Resultados da Votação</h3>
+                        <div id="vote-results" class="results-container">
+                            <!-- Resultados aparecerão aqui -->
+                        </div>
+                        <div id="vote-stats" class="stats hidden">
+                            <!-- Estatísticas aparecerão aqui -->
+                        </div>
+                    </div>
+
+                    <!-- Controles (apenas para criador) -->
+                    <div id="creator-controls" class="controls hidden">
+                        <button class="btn btn-primary" onclick="startVoting()">🚀 Iniciar Votação</button>
+                        <button class="btn btn-success" onclick="revealVotes()" id="reveal-btn" disabled>👁️ Revelar Votos</button>
+                        <button class="btn btn-warning" onclick="resetVoting()">🔄 Nova Votação</button>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <!-- Lista de usuários -->
+                    <div class="users-list">
+                        <h3>👥 Participantes (<span id="user-count">0</span>)</h3>
+                        <div id="users-container">
+                            <!-- Usuários aparecerão aqui -->
+                        </div>
+                    </div>
+
+                    <!-- Chat -->
+                    <div class="chat-container">
+                        <h3>💬 Chat</h3>
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="chat-input" placeholder="Digite uma mensagem..." maxlength="200">
+                            <button onclick="sendMessage()">Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Variáveis globais
+        const socket = io();
+        let currentUser = null;
+        let currentRoom = null;
+        let selectedCard = null;
+
+        // Elementos DOM
+        const joinSection = document.getElementById('join-section');
+        const pokerSection = document.getElementById('poker-section');
+        const roomNameEl = document.getElementById('room-name');
+        const userNameEl = document.getElementById('user-name');
+        const connectionStatus = document.getElementById('connection-status');
+        const storyInput = document.getElementById('story-input');
+        const currentStoryEl = document.getElementById('current-story');
+        const votingStatus = document.getElementById('voting-status');
+        const statusText = document.getElementById('status-text');
+        const cardsSection = document.getElementById('cards-section');
+        const cardsContainer = document.getElementById('cards-container');
+        const resultsSection = document.getElementById('results-section');
+        const voteResults = document.getElementById('vote-results');
+        const voteStats = document.getElementById('vote-stats');
+        const creatorControls = document.getElementById('creator-controls');
+        const revealBtn = document.getElementById('reveal-btn');
+        const usersContainer = document.getElementById('users-container');
+        const userCount = document.getElementById('user-count');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+
+        // Eventos de conexão
+        socket.on('connect', () => {
+            connectionStatus.textContent = 'Conectado';
+            connectionStatus.style.color = '#27ae60';
+        });
+
+        socket.on('disconnect', () => {
+            connectionStatus.textContent = 'Desconectado';
+            connectionStatus.style.color = '#e74c3c';
+        });
+
+        // Entrar na sala
+        function joinRoom() {
+            const roomId = document.getElementById('room-id').value.trim();
+            const userName = document.getElementById('user-name-input').value.trim();
+            const isSpectator = document.getElementById('spectator-mode').checked;
+
+            if (!roomId || !userName) {
+                alert('Por favor, preencha todos os campos!');
+                return;
+            }
+
+            socket.emit('joinRoom', {
+                roomId: roomId,
+                userName: userName,
+                isSpectator: isSpectator
+            });
+        }
+
+        // Sala unida com sucesso
+        socket.on('roomJoined', (data) => {
+            currentRoom = data.room;
+            currentUser = data.user;
+
+            // Atualizar interface
+            joinSection.classList.add('hidden');
+            pokerSection.classList.remove('hidden');
+            
+            roomNameEl.textContent = `Sala: ${currentRoom.id}`;
+            userNameEl.textContent = `Usuário: ${currentUser.name}${currentUser.isSpectator ? ' (Espectador)' : ''}${currentUser.isCreator ? ' (Criador)' : ''}`;
+
+            // Mostrar controles se for criador
+            if (currentUser.isCreator) {
+                creatorControls.classList.remove('hidden');
+            }
+
+            // Atualizar história atual
+            if (currentRoom.currentStory) {
+                currentStoryEl.textContent = currentRoom.currentStory;
+            }
+
+            // Atualizar usuários
+            updateUsersList(currentRoom.users);
+
+            // Se a votação estiver ativa
+            if (currentRoom.votingActive) {
+                showVotingInterface();
+                if (currentRoom.votesRevealed) {
+                    showResults(currentRoom.votes);
+                }
+            }
+        });
+
+        // Usuário entrou na sala
+        socket.on('userJoined', (user) => {
+            addChatMessage(`${user.name} entrou na sala`, 'system');
+        });
+
+        // Usuário saiu da sala
+        socket.on('userLeft', (data) => {
+            addChatMessage(`${data.userName} saiu da sala`, 'system');
+        });
+
+        // Lista de usuários atualizada
+        socket.on('usersUpdated', (users) => {
+            updateUsersList(users);
+        });
+
+        // Votação iniciada
+        socket.on('votingStarted', (data) => {
+            currentStoryEl.textContent = data.story;
+            storyInput.value = '';
+            selectedCard = null;
+            
+            showVotingInterface();
+            createCards(data.cards);
+            
+            statusText.textContent = currentUser.isSpectator ? 
+                'Votação em andamento (você é espectador)' : 
+                'Selecione sua carta para votar!';
+            
+            resultsSection.classList.add('hidden');
+            
+            if (currentUser.isCreator) {
+                revealBtn.disabled = true;
+            }
+        });
+
+        // Usuário votou
+        socket.on('userVoted', (data) => {
+            const userEl = document.querySelector(`[data-user-id="${data.userId}"]`);
+            if (userEl) {
+                const indicator = userEl.querySelector('.vote-indicator');
+                indicator.classList.add('voted');
+            }
+        });
+
+        // Todos votaram
+        socket.on('allUsersVoted', () => {
+            if (currentUser.isCreator) {
+                revealBtn.disabled = false;
+                statusText.textContent = 'Todos votaram! Você pode revelar os votos.';
+            } else {
+                statusText.textContent = 'Todos votaram! Aguardando revelação...';
+            }
+        });
+
+        // Votos revelados
+        socket.on('votesRevealed', (data) => {
+            showResults(data.votes, data.stats);
+            cardsSection.classList.add('hidden');
+            statusText.textContent = 'Votos revelados!';
+        });
+
+        // Votação resetada
+        socket.on('votingReset', () => {
+            resetInterface();
+            statusText.textContent = 'Aguardando próxima votação...';
+        });
+
+        // Nova mensagem no chat
+        socket.on('newMessage', (message) => {
+            addChatMessage(`${message.userName}: ${message.text}`, 'user', message.timestamp);
+        });
+
+        // Funções da interface
+
+        function showVotingInterface() {
+            votingStatus.classList.remove('hidden');
+            if (!currentUser.isSpectator) {
+                cardsSection.classList.remove('hidden');
+            }
+        }
+
+        function createCards(cards) {
+            cardsContainer.innerHTML = '';
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card';
+                cardEl.textContent = card;
+                cardEl.onclick = () => selectCard(card, cardEl);
+                cardsContainer.appendChild(cardEl);
+            });
+        }
+
+        function selectCard(card, cardEl) {
+            if (currentUser.isSpectator) return;
+            
+            // Remover seleção anterior
+            const prevSelected = document.querySelector('.card.selected');
+            if (prevSelected) prevSelected.classList.remove('selected');
+            
+            // Selecionar nova carta
+            cardEl.classList.add('selected');
+            selectedCard = card;
+            
+            // Enviar voto
+            socket.emit('submitVote', { vote: card });
+            
+            // Desabilitar cartas
+            document.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
+            
+            statusText.textContent = `Você votou: ${card}. Aguardando outros jogadores...`;
+        }
+
+        function showResults(votes, stats) {
+            resultsSection.classList.remove('hidden');
+            
+            voteResults.innerHTML = '';
+            Object.values(votes).forEach(vote => {
+                const resultEl = document.createElement('div');
+                resultEl.className = 'vote-result';
+                resultEl.innerHTML = `
+                    <span>${vote.userName}</span>
+                    <strong>${vote.vote}</strong>
+                `;
+                voteResults.appendChild(resultEl);
+            });
+            
+            if (stats) {
+                voteStats.classList.remove('hidden');
+                voteStats.innerHTML = `
+                    <h4>Estatísticas:</h4>
+                    <p><strong>Média:</strong> ${stats.avg}</p>
+                    <p><strong>Mín/Máx:</strong> ${stats.min} / ${stats.max}</p>
+                    <p><strong>Votos válidos:</strong> ${stats.count}</p>
+                `;
+            }
+        }
+
+        function updateUsersList(users) {
+            usersContainer.innerHTML = '';
+            userCount.textContent = users.length;
+            
+            users.forEach(user => {
+                const userEl = document.createElement('div');
+                userEl.className = `user ${user.isCreator ? 'creator' : ''} ${user.isSpectator ? 'spectator' : ''}`;
+                userEl.setAttribute('data-user-id', user.id);
+                userEl.innerHTML = `
+                    <span>
+                        ${user.name}
+                        ${user.isCreator ? ' 👑' : ''}
+                        ${user.isSpectator ? ' 👁️' : ''}
+                    </span>
+                    <div class="vote-indicator"></div>
+                `;
+                usersContainer.appendChild(userEl);
+            });
+        }
+
+        function resetInterface() {
+            cardsSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            voteStats.classList.add('hidden');
+            currentStoryEl.textContent = '';
+            selectedCard = null;
+            
+            // Resetar indicadores de voto
+            document.querySelectorAll('.vote-indicator').forEach(indicator => {
+                indicator.classList.remove('voted');
+            });
+            
+            if (currentUser.isCreator) {
+                revealBtn.disabled = true;
+            }
+        }
+
+        function addChatMessage(text, type = 'user', timestamp = Date.now()) {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            
+            const time = new Date(timestamp).toLocaleTimeString();
+            messageEl.innerHTML = `
+                ${text}
+                <span class="timestamp">${time}</span>
+            `;
+            
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Funções de controle (criador)
+
+        function startVoting() {
+            const story = storyInput.value.trim();
+            if (!story) {
+                alert('Por favor, digite uma história/tarefa!');
+                return;
+            }
+            
+            socket.emit('startVoting', { story: story });
+        }
+
+        function revealVotes() {
+            socket.emit('revealVotes');
+        }
+
+        function resetVoting() {
+            socket.emit('resetVoting');
+        }
+
+        function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            
+            socket.emit('sendMessage', { text: text });
+            chatInput.value = '';
+        }
+
+        // Eventos de teclado
+        document.getElementById('room-id').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinRoom();
+        });
+
+        document.getElementById('user-name-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinRoom();
+        });
+
+        storyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && currentUser.isCreator) startVoting();
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
