@@ -1,0 +1,13 @@
+{
+    "apps": [
+      {
+        "name": "scrumpoker",
+        "script": "npm",
+        "args": "start",
+        "env": {
+          "NODE_ENV": "production",
+          "NODE_PORT": "3000"
+        }
+      }
+    ]
+  }

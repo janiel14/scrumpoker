@@ -5,7 +5,7 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
-const port = process.env.PORT || 3000;
+const port = process.env.NODE_PORT || 3000;
 
 // Estruturas de dados para gerenciar salas e usuários
 const rooms = new Map();
